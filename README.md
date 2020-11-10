@@ -7,6 +7,7 @@ The board I use is a Nodemcu v2 with a Strip of 300 SK6812 RGBW LEDs and local B
 Because I use one half of the strip to light the working area of my room and the other half is facing the wall my bed is standing, ```void thecolor(c, i)``` came out little more complicated to turn each side on and off without effecting the other side. Reason for turning all LEDs white in setup was mounting this whole thing to the ceiling and turning it on with the light switch of my room. I am happy to say that I was able to get rid of every delay used to make the animations happen.
 
 ## What my Blynk App looks like
+<img src="https://github.com/Rhababaer/Room-lighting/blob/main/main.png" width =350><img src="https://github.com/Rhababaer/Room-lighting/blob/main/second.png" width =350>
 
 ## Managing Functions
 ### thecolor(c, i)
