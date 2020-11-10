@@ -112,7 +112,7 @@ void setup() {
 
   Serial.println("strip initialized - start blynk");
   
-  Blynk.begin(auth, ssid, password,IPAddress(192,168,178,178),8080);
+  Blynk.begin(auth, ssid, password,IPAddress(xxx,xxx,xxx,xxx),8080);
   if(Blynk.connect()){Serial.println("blynk connected");}
   //ESP.wdtDisable();
   //ESP.wdtEnable(WDTO_8S);
