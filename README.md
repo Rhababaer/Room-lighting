@@ -4,13 +4,13 @@ When I was looking for cool effect/animation functions I found numerous videos o
 
 ## On my Setup
 The board I use is a Nodemcu v2 with a Strip of 300 SK6812 RGBW LEDs and local Blynk server, so youd have to make changes to the code accordingly. As mentioned in the wiki of the NeoPixelBus the pin to connect the strip to is [automatically set to GPIO3](https://github.com/Makuna/NeoPixelBus/wiki/ESP8266-NeoMethods#neoesp8266dma800kbpsmethod) on ESP8266.
-Because I use one half of the strip to light the working area of my room and the other half is facing the wall my bed is standing, ```void thecolor(c, i)``` came out little more complicated to turn each side on and off without effecting the other side. I am happy to say that I was able to get rid of every delay used to make the animations happen and 
+Because I use one half of the strip to light the working area of my room and the other half is facing the wall my bed is standing, ```void thecolor(c, i)``` came out little more complicated to turn each side on and off without effecting the other side. Reason for turning all LEDs white in setup was mounting this whole thing to the ceiling and turning it on with the light switch of my room. I am happy to say that I was able to get rid of every delay used to make the animations happen.
 
 ## What my Blynk App looks like
 
 ## Managing Functions
 ### thecolor(c, i)
-Takes in color value and Pixel index and decides whether to turn white, ```add``` color component to white, ```invert``` to black/off or by default use colors specified by a function.
+Takes color value and Pixel index and decides whether to turn white, ```add``` color component to white, ```invert``` to black/off or by default use the given  color. As mentioned in the previous paragraph, the function also handles the destinction on which half of the strip is to be turned white or black, hence the bed and work conditions.
 
 ### brightness(color), rgblum(color, lum)
 As the names suggest are used to control the brightness. The brightness of the Adafruit Code is handled by a library function I pretty much copied. The functions split the combined uint32_t into their r g b w components. Brightness directly uses input from a Blynk widget and turns the input into a ```RgbwColor``` variable.
