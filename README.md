@@ -3,7 +3,7 @@ Programm to control the addressable LED-strip in my room with ESP8266, [Blynk](h
 When I was looking for cool effect/animation functions I found numerous videos on Youtube, but all lacking the code to copy and explore, so I had to come up with something myself and this is it. To be fair I copied some functions from Adafruits examples, hence the ```Wheel()``` function. Now I am no expert in programming so some things in here just work I guess.
 
 ## On my Setup
-The board I use is a Nodemcu v2 with a Strip of 300 SK6812 RGBW LEDs and local Blynk server, so youd have to make changes to the code accordingly. As mentioned in the wiki of the NeoPixelBus the pin to connect the strip to is [automatically set to GPIO3](https://github.com/Makuna/NeoPixelBus/wiki/ESP8266-NeoMethods#neoesp8266dma800kbpsmethod) on ESP8266.
+The board I use is a Nodemcu v3 with a Strip of 300 SK6812 RGBW LEDs and local Blynk server, so youd have to make changes to the code accordingly. As mentioned in the wiki of the NeoPixelBus the pin to connect the strip to is [automatically set to GPIO3](https://github.com/Makuna/NeoPixelBus/wiki/ESP8266-NeoMethods#neoesp8266dma800kbpsmethod) on ESP8266.
 Because I use one half of the strip to light the working area of my room and the other half is facing the wall my bed is standing, ```void thecolor(c, i)``` came out little more complicated to turn each side on and off without effecting the other side. Reason for turning all LEDs white in setup was mounting this whole thing to the ceiling and turning it on with the light switch of my room. I am happy to say that I was able to get rid of every delay used to make the animations happen.
 
 ## What my Blynk App looks like
