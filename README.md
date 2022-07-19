@@ -8,7 +8,9 @@ Because I use one half of the strip to light the working area of my room and the
 
 ## What my Nodered-Dash looks like
 <img src="https://github.com/Rhababaer/Room-lighting/blob/main/nodered_dash.PNG">
+
 ## Managing Functions
+
 ### thecolor(c, i)
 Takes color value and Pixel index and decides whether to turn white, ```add``` color component to white, ```invert``` to black/off or by default use the given  color. As mentioned in the previous paragraph, the function also handles the destinction on which half of the strip is to be turned white or black, hence the bed and work conditions.
 
