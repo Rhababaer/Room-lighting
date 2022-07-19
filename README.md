@@ -1,3 +1,5 @@
+### Since Blynk is phasing out their support for the old app, I moved this project over to node-red
+
 # Room-lighting
 Programm to control the addressable LED-strip in my room with ESP8266, [Blynk](https://github.com/blynkkk/blynk-library), [Neopixelbus by Makuna](https://github.com/Makuna/NeoPixelBus) or [Adafruit-Neopixel](https://github.com/adafruit/Adafruit_NeoPixel)
 When I was looking for cool effect/animation functions I found numerous videos on Youtube, but all lacking the code to copy and explore, so I had to come up with something myself and this is it. To be fair I copied some functions from Adafruits examples, hence the ```Wheel()``` function. Now I am no expert in programming so some things in here just work I guess.
