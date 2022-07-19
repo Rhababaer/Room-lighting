@@ -1,5 +1,6 @@
-#include<ESP8266WiFi.h> 
-#include <BlynkSimpleEsp8266.h>
+//#include <WiFi.h>
+#include <ESP8266WiFi.h> 
+#include <PubSubClient.h>
 #include <NeoPixelBus.h>
 
 // For Esp8266, the Pin is omitted and it uses GPIO3 due to DMA hardware use.  
@@ -9,56 +10,23 @@
 const uint16_t PixelCount = 300;
 
 //wifi credentials
-const char* ssid = "None of your business"; //your WiFi Name
-const char* password = "still none of yours";  //Your Wifi Password
-char auth[] = "think you get the idea";
-//WiFiServer server(80);
+const char* ssid = "-.-.-."; //your WiFi Name
+const char* password = "-.-.-.";  //Your Wifi Password
+const char* mqtt_server = "-.-.-.";
 
-NeoPixelBus<NeoRgbwFeature, Neo800KbpsMethod> strip(PixelCount);
+WiFiClient espClient;
+PubSubClient client(espClient);
+long lastMsg = 0;
+char msg[50];
+int value = 0;
+
+NeoPixelBus<NeoRgbwFeature, Neo800KbpsMethod> strip(PixelCount);//,pin has to be added into strip bracket for esp32
+
 
 //virtual pins
 
-int bed=1,work=1,choice=1,vp4=75,v=20,m,vp7,vp8,vp9,invert=0,rgbh,add=0, sortint;
+int bed=1,work=1,choice=1,lum=75,v=30,m,vpR,vpG,vpB,invert=0,rgbh,add=0, sortint;
 int sort[4]={2,0,1,3};
-
-//bed
-BLYNK_WRITE(V1){ bed = param.asInt(); }
-//work
-BLYNK_WRITE(V2){ work = param.asInt(); }
-//choice
-BLYNK_WRITE(V3){ choice = param.asInt(); }
-//slider brightness
-BLYNK_WRITE(V4){ vp4 = param.asInt(); }
-//slider velocity
-BLYNK_WRITE(V5){ v = param.asInt(); }
-//slider multiplier
-BLYNK_WRITE(V6){ m = param.asInt(); }
-// R
-BLYNK_WRITE(V7){ vp7 = param.asInt(); }
-// G
-BLYNK_WRITE(V8){ vp8 = param.asInt(); }
-// B
-BLYNK_WRITE(V9){ vp9 = param.asInt(); }
-//invert
-BLYNK_WRITE(V10){ invert = param.asInt(); }
-//control water
-BLYNK_WRITE(V11){ sortint = param.asInt();
-                for(int i=3;i<=0;i--){
-                sort[i]= sortint%10;
-                sortint/=10;
-                Serial.print(sort[i]);
-                }
-                }
-//RGB brightness
-BLYNK_WRITE(V12){ rgbh = param.asInt(); }
-//add color
-BLYNK_WRITE(V13){ add = param.asInt(); }
-
-
-BLYNK_CONNECTED() {
-  // Request Blynk server to re-send latest values for all pins
-  Blynk.syncAll();
-}
 
 unsigned long timex; //time buffer
 uint8_t nc[PixelCount];
@@ -66,14 +34,16 @@ const uint16_t schtep=300;
 uint16_t sortbuf=0000, loopvar=0;
 uint32_t flood1[schtep],flood2[schtep];
 
-
-
 /******---------------*****
 *******-----SETUP-----*****
 *******------------------*/
 
+
+
+
 void setup() {
 
+// put your setup code here, to run once: 
   Serial.begin(115200);
   Serial.println("start setup");
 
@@ -85,32 +55,30 @@ void setup() {
   }
   strip.Show();
 
-  Serial.println("strip initialized - start blynk");
+  Serial.println("strip initialized - start nodered");
   
-  Blynk.begin(auth, ssid, password,IPAddress(xxx,xxx,xxx,xxx),8080);
-  if(Blynk.connect()){Serial.println("blynk connected");}
+  setup_wifi();
+  client.setServer(mqtt_server, 1883);
+  client.setCallback(callback);
+
+  while (!client.connected()) {
+    reconnect();
+  }
+
+  client.publish("/Leds/mode","1");
+  client.publish("/Leds/buttons/bedon","true");
+  client.publish("/Leds/buttons/workon","true");
+  client.publish("/Leds/buttons/noColor","false");
+  client.publish("/Leds/buttons/noInvert","false");
+  client.publish("/Leds/sliders/v","30");
+  client.publish("/Leds/sliders/rgbLum","255");
+  client.publish("/Leds/sliders/Lum","75");
+  client.publish("/Leds/waterdir","2013");
   
   randomSeed(analogRead(0));
   //Serial.println("button state");
   //change button state to on
-  Blynk.virtualWrite(V1, 1);
-  Blynk.virtualWrite(V2, 1);
-  Blynk.virtualWrite(V3, 1);
-  Blynk.virtualWrite(V4, 75);
-  Blynk.virtualWrite(V5, 20);
-  Blynk.virtualWrite(V10, 0);
-  Blynk.virtualWrite(V13, 0);
-  bed=1;
-  work=1;
-  add=0;
-  invert=0;
-  choice=1;
-  vp4=75;
-  v=20;
   
-  //sortbuf to input
-  Blynk.virtualWrite(V11, 2013);
-  //Blynk.syncAll();
   //for fire sim
   for(uint16_t i=0; i< PixelCount; i++){
     nc[i]=random(schtep);
@@ -119,28 +87,151 @@ void setup() {
 }
 
 
+//
+//  -WIFI setup-
+//
+void setup_wifi() {
+  delay(10);
+  // We start by connecting to a WiFi network
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
+//
+//  -callback fn-
+//
+void callback(char* topic, byte* message, unsigned int length) {
+  Serial.print("Message arrived on topic: ");
+  Serial.print(topic);
+  Serial.print(". Message: ");
+  String messageTemp;
+  
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)message[i]);
+    messageTemp += (char)message[i];
+  }
+  Serial.println();
+
+ if(topic=="Leds/mode"){
+   choice = messageTemp.toInt(); 
+}
+else if(topic=="Leds/bed"){
+  if(messageTemp == "true"){
+        bed = 1;
+      }
+      else if(messageTemp == "false"){
+        bed = 0;      
+      }
+}
+else if(topic=="Leds/work"){
+  if(messageTemp == "true"){
+    work = 1;
+  }
+  else if(messageTemp == "false"){
+    work = 0;      
+  }
+}
+else if(topic=="Leds/addcolor"){
+  if(messageTemp == "true"){
+    add = 1;
+  }
+  else if(messageTemp == "false"){
+    add = 0;      
+  }
+}
+else if(topic=="Leds/invert"){
+  if(messageTemp == "true"){
+    invert = 1;
+  }
+  else if(messageTemp == "false"){
+    invert = 0;      
+  }
+}
+else if(topic=="Leds/modu"){
+  m = messageTemp.toInt();
+}
+else if(topic=="Leds/v"){
+  v = messageTemp.toInt();
+}
+else if(topic=="Leds/rgbLum"){
+  rgbh = messageTemp.toInt();
+}
+else if(topic=="Leds/lum"){
+  lum = messageTemp.toInt();
+}
+else if(topic=="Leds/colorPick"){
+  char hexString[8];
+      messageTemp.toCharArray(hexString,8);
+      byte r,g,b;
+      long l=strtol(hexString+1,NULL,16);
+      r = l>>16;
+      g = l<<8;
+      b = l;
+      vpR = r; 
+      vpG = g;
+      vpB = b;
+}
+else if(topic=="Leds/waterDir"){
+  sortint = messageTemp.toInt();
+  for(int i=3;i<=0;i--){
+    sort[i]= sortint%10;
+    sortint/=10;
+    Serial.print(sort[i]);
+  }
+} 
+}
+
+//
+//  -reconn fn-
+//
+void reconnect() {
+  // Loop until we're reconnected
+  while (!client.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    // Attempt to connect
+    if (client.connect("ESP32Client")) {
+      Serial.println("connected");
+      // Subscribe
+      client.subscribe("Leds/#");
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
+  }
+}
 
 /******---------------*****
 *******------LOOP-----*****
 *******------------------*/
 
 
-void loop() {
-//Serial.print("Start loop::");
-//Serial.print("Blynk Run::"); 
-  Blynk.run();
-  //serial output
-  if(!Blynk.connected())
-    {
-       Serial.println("not connected");
-    }
 
+
+void loop() {
+
+client.loop();
 
 
 /******---------------*****
 *******---Opttions----*****
 *******------------------*/
-
+//Serial.print("Switch Case::");
  
   switch(choice){
   
@@ -264,12 +355,15 @@ void loop() {
 
 
 
+
+
+
 /******---------------*****
 *******---functions---*****
 *******------------------*/
 
 
-//turn off when white - manage pixels
+//turn off when white
 void thecolor(uint32_t c, uint16_t i){
       //Serial.print("thecolor ");
       //Serial.print(i);
@@ -277,21 +371,21 @@ void thecolor(uint32_t c, uint16_t i){
       strip.SetPixelColor(i, brightness(rgblum(c, rgbh)));     
       if(bed==1 && invert==0 && i < (PixelCount/2) ){
         //Serial.print("bed=1::");
-        if(add==1){strip.SetPixelColor(i, brightness(stripColor(vp7, vp8, vp9,255)));/*Serial.print("add=1::");*/}
+        if(add==1){strip.SetPixelColor(i, brightness(stripColor(vpR, vpG, vpB,255)));/*Serial.print("add=1::");*/}
         else{strip.SetPixelColor(i, brightness(stripColor(0, 0, 0,255)));/*Serial.print("add=0::");*/}}
       else if(bed==1 && invert==1 && i < (PixelCount/2) ){
         strip.SetPixelColor(i, RgbwColor(0, 0, 0, 0)); }
             
       if(work==1 && invert==0 && i >= (PixelCount/2) ){
         //Serial.print("work=1::");
-        if(add==1){strip.SetPixelColor(i, brightness(stripColor(vp7, vp8, vp9,255)));/*Serial.print("add=1::");*/}
+        if(add==1){strip.SetPixelColor(i, brightness(stripColor(vpR, vpG, vpB,255)));/*Serial.print("add=1::");*/}
         else{strip.SetPixelColor(i, brightness(stripColor(0, 0, 0,255)));/*Serial.print("add=0::");*/}}
       else if(work==1 && invert==1 && i >= (PixelCount/2) ){
         strip.SetPixelColor(i, RgbwColor(0, 0, 0, 0)); }
       
 }
 
-//control overall brightness of the strip
+
 RgbwColor brightness(uint32_t color){
     uint8_t r,g,b,w;
     w = (uint8_t)(color >> 24),
@@ -299,15 +393,15 @@ RgbwColor brightness(uint32_t color){
     g = (uint8_t)(color >>  8),
     b = (uint8_t)color;
     
-    r = (r * vp4) >>8;
-    g = (g * vp4) >>8;
-    b = (b * vp4) >>8;
-    w = (w * vp4) >>8;
+    r = (r * lum) >>8;
+    g = (g * lum) >>8;
+    b = (b * lum) >>8;
+    w = (w * lum) >>8;
 
     return(RgbwColor(g, r, b, w));
 }
 
-//control color brightness seperately
+
 uint32_t rgblum(uint32_t color, uint8_t lum){
     uint8_t r,g,b,w;
     w = (uint8_t)(color >> 24),
@@ -326,6 +420,8 @@ uint32_t rgblum(uint32_t color, uint8_t lum){
 uint32_t stripColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w){
   return ((uint32_t)w << 24 | ((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
 }
+
+
 
 
 //random color generator
@@ -360,7 +456,7 @@ uint32_t Wheel(byte WheelPos) {
 //custom color
 void customcolor(){
   for(uint16_t i=0; i< PixelCount; i++){
-  thecolor(stripColor(vp7,vp8,vp9,0),i);  
+  thecolor(stripColor(vpR,vpG,vpB,0),i);  
   }
 strip.Show();
 }
@@ -475,7 +571,7 @@ void customflicker(){
 
   if(millis()-timex>v && bump==true){
   for(uint16_t i=0; i< PixelCount; i++){
-    thecolor(stripColor(vp7,vp8,vp9,0), i);  
+    thecolor(stripColor(vpR,vpG,vpB,0), i);  
   }
   timex=millis();
   bump=false;
@@ -532,7 +628,7 @@ void custombreathe(){
  
     k=sin(millis()*(M_PI*2/l))* 127 + 128;
     for(i=0; i<PixelCount; i++) {
-      thecolor( rgblum(stripColor(vp7,vp8,vp9,0), k) , i);
+      thecolor( rgblum(stripColor(vpR,vpG,vpB,0), k) , i);
     }
     //Serial.print("show ");
     strip.Show();
@@ -600,7 +696,7 @@ void thunder(){
   //uint16_t loc; //location
   static uint16_t delai=0,loc; //delay
   uint8_t colour=255;
-  uint8_t rcolour=vp7, gcolour=vp8, bcolour=vp9;
+  uint8_t rcolour=vpR, gcolour=vpG, bcolour=vpB;
   
   switch(thunderstep){
       case 0:
