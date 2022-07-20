@@ -6,7 +6,7 @@ When I was looking for cool effect/animation functions I found numerous videos o
 The board I use is a Nodemcu v3 with a Strip of 300 SK6812 RGBW LEDs and local Node-Red server, so youd have to make changes to the code accordingly. As mentioned in the wiki of the NeoPixelBus the pin to connect the strip to is [automatically set to GPIO3](https://github.com/Makuna/NeoPixelBus/wiki/ESP8266-NeoMethods#neoesp8266dma800kbpsmethod) on ESP8266. On ESP32 you have to add the designated Pin.
 Because I use one half of the strip to light the working area of my room and the other half is facing the wall my bed is standing, ```void thecolor(c, i)``` came out little more complicated to turn each side on and off without effecting the other side. Reason for turning all LEDs white in setup was mounting this whole thing to the ceiling and turning it on with the light switch of my room. I am happy to say that I was able to get rid of every delay used to make the animations happen.
 
-## What my Nodered-Dash looks like
+## What my Node-Red-Dash looks like
 <img src="https://github.com/Rhababaer/Room-lighting/blob/main/nodered_dash.PNG">
 
 ## Managing Functions
