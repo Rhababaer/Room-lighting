@@ -25,7 +25,7 @@ NeoPixelBus<NeoRgbwFeature, Neo800KbpsMethod> strip(PixelCount);//,pin has to be
 
 //virtual pins
 
-int bed=1,work=1,choice=1,lum=75,v=30,m,vpR,vpG,vpB,invert=0,rgbh,add=0, sortint;
+int bed=1,work=1,choice=1,lum=75,v=30,m,vpR,vpG,vpB,invert=0,rgbh=255,add=0, sortint;
 int sort[4]={2,0,1,3};
 
 unsigned long timex; //time buffer
@@ -175,14 +175,10 @@ else if(topic=="Leds/lum"){
 else if(topic=="Leds/colorPick"){
   char hexString[8];
       messageTemp.toCharArray(hexString,8);
-      byte r,g,b;
-      long l=strtol(hexString+1,NULL,16);
-      r = l>>16;
-      g = l<<8;
-      b = l;
-      vpR = r; 
-      vpG = g;
-      vpB = b;
+      int i= (int) strtol(&hexString[0],NULL,16);
+      vpR = i>>16;
+      vpG = i>>8&0xFF;
+      vpB = i & 0xFF;
 }
 else if(topic=="Leds/waterDir"){
   sortint = messageTemp.toInt();
@@ -366,7 +362,7 @@ client.loop();
 //turn off when white
 void thecolor(uint32_t c, uint16_t i){
       //Serial.print("thecolor ");
-      //Serial.print(i);
+      //Serial.println(c);
       //Serial.print("::");
       strip.SetPixelColor(i, brightness(rgblum(c, rgbh)));     
       if(bed==1 && invert==0 && i < (PixelCount/2) ){
@@ -409,9 +405,11 @@ uint32_t rgblum(uint32_t color, uint8_t lum){
     g = (uint8_t)(color >>  8),
     b = (uint8_t)color;
     
+
     r = (r * lum) >>8;
     g = (g * lum) >>8;
     b = (b * lum) >>8;
+
     
     return(stripColor(r, g, b, w));
 }
@@ -455,9 +453,11 @@ uint32_t Wheel(byte WheelPos) {
  
 //custom color
 void customcolor(){
+  //Serial.println("customcolor");
   for(uint16_t i=0; i< PixelCount; i++){
   thecolor(stripColor(vpR,vpG,vpB,0),i);  
   }
+  Serial.println("show");
 strip.Show();
 }
 
@@ -644,7 +644,7 @@ void rainbowinstant (){
   for(uint16_t i=0; i< PixelCount; i++){
   thecolor(rc, i);  
   }
-  //Serial.print("show ");
+  Serial.print("show ");
   strip.Show();
   }
 }
@@ -863,7 +863,11 @@ timex=millis();
     r2 = (uint8_t)(flood2[nc2] >> 16),
     g2 = (uint8_t)(flood2[nc2] >>  8),
     b2 = (uint8_t)flood2[nc2];
-      
+
+/*Serial.println(max(r1,r2));
+Serial.println(max(g1,g2));
+Serial.println(max(b1,b2));
+*/      
       thecolor(stripColor(max(r1,r2),max(g1,g2),max(b1,b2),0),j);
   }
   loopvar++;
@@ -894,6 +898,7 @@ for(uint16_t i=0; i<schtep; i++){
   wave[3][1]= 30*0.01 *tide3 *wavsine(offset3,i);
   wave[3][2]= 150*0.01 *tide3 *wavsine(offset3,i);
 
+ 
   flood1[i]=stripColor(max(wave[sort[0]][0],wave[sort[1]][0]),max(wave[sort[0]][1],wave[sort[1]][1]),max(wave[sort[0]][2],wave[sort[1]][2]),0);
   flood2[i]=stripColor(max(wave[sort[2]][0],wave[sort[3]][0]),max(wave[sort[2]][1],wave[sort[3]][1]),max(wave[sort[2]][2],wave[sort[3]][2]),0);
 }
@@ -913,3 +918,4 @@ void bubbleUnsort(int *list, int elem)
    }
  }
 }
+
