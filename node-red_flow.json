@@ -16,13 +16,13 @@
         "group": "257b839dbd7beaa3",
         "format": "hex",
         "outformat": "string",
-        "showSwatch": true,
-        "showPicker": false,
+        "showSwatch": false,
+        "showPicker": true,
         "showValue": false,
-        "showHue": false,
+        "showHue": true,
         "showAlpha": false,
-        "showLightness": true,
-        "square": "false",
+        "showLightness": false,
+        "square": "true",
         "dynOutput": "false",
         "order": 11,
         "width": 2,
@@ -815,6 +815,25 @@
         "topicType": "msg",
         "splitLayout": "",
         "className": "",
+        "x": 390,
+        "y": 540,
+        "wires": [
+            [
+                "c1800ac313bbe4d2"
+            ]
+        ]
+    },
+    {
+        "id": "c1800ac313bbe4d2",
+        "type": "split",
+        "z": "b60554ffc955a3b3",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
         "x": 530,
         "y": 540,
         "wires": [
